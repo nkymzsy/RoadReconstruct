@@ -34,10 +34,6 @@ while(not rospy.is_shutdown()):
         break
     groundCloud = data["cloud"][data["label"] == 40]
 
-    pubRawCloud.publish(numpy_to_ros_pointcloud2(data["cloud"]))
-    pubSemanticCloud.publish(numpy_to_ros_pointcloud2(update_intensity_with_labels(data["cloud"],data["label"])))
-    pubGoundCloud.publish(numpy_to_ros_pointcloud2(groundCloud))
-    
     loss = 1
     xy = torch.from_numpy(groundCloud[:,:2]).float().to('cuda')
     z_real = torch.tensor(groundCloud[:,2:3]).float().to('cuda')
@@ -49,8 +45,14 @@ while(not rospy.is_shutdown()):
     
     z_mesh = heightMLP(mesh_torch)
     ground_mesh = np.column_stack((mesh, z_mesh.cpu().detach().numpy()))
-    pubGoundMesh.publish(numpy_to_ros_pointcloud2(ground_mesh.astype(np.float32)))
+
     torch.save(heightMLP.state_dict(), 'src/RoadReconstruct/lib/base_model.pth')
+
+    pubGoundMesh.publish(numpy_to_ros_pointcloud2(ground_mesh.astype(np.float32)))
+    pubRawCloud.publish(numpy_to_ros_pointcloud2(data["cloud"]))
+    pubSemanticCloud.publish(numpy_to_ros_pointcloud2(update_intensity_with_labels(data["cloud"],data["label"])))
+    pubGoundCloud.publish(numpy_to_ros_pointcloud2(groundCloud))
+    
     rate.sleep()
 
 
